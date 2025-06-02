@@ -13,7 +13,7 @@ import os
 
 # Configuration
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-SERVICE_ACCOUNT_FILE = os.path.join(BASE_DIR, "credentials", "centering-vine-460210-s6-e51668aed631.json")
+SERVICE_ACCOUNT_FILE = os.getenv('GOOGLE_APPLICATION_CREDENTIALS', os.path.join(BASE_DIR, "credentials", "centering-vine-460210-s6-e51668aed631.json"))
 BUCKET_NAME = 'cloud-doc-bucket'
 
 # Google Cloud Credentials
