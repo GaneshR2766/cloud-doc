@@ -51,17 +51,19 @@ function App() {
         >
           {!token ? (
             <GoogleLogin
-              onSuccess={(credentialResponse) => {
-                const idToken = credentialResponse.credential;
-                const decoded = jwtDecode(idToken);
-                setToken(idToken);
-                setUserInfo(decoded);
-                console.log('Logged in. User info:', decoded);
-              }}
-              onError={() => {
-                console.log('Login Failed');
-              }}
-            />
+  onSuccess={(credentialResponse) => {
+    const idToken = credentialResponse.credential;
+    const decoded = jwtDecode(idToken);
+    setToken(idToken);
+    setUserInfo(decoded);
+    console.log('Logged in. User info:', decoded);
+  }}
+  onError={() => {
+    console.log('Login Failed');
+  }}
+  redirectUri="https://ganeshr2766.github.io/cloud-doc"
+/>
+
           ) : (
             <>
               <div
