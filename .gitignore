@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.pyc
+venv/
+
+# Node/Vite
+node_modules/
+dist/
+.env
+
+# Others
+.DS_Store
+
+backend/credentials/centering-vine-460210-s6-e51668aed631.json
+backend/credentials/centering-vine-460210-s6-e51668aed631.json
