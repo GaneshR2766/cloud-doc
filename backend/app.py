@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify 
 from flask_cors import CORS
 from google.cloud import storage
 from google.oauth2 import service_account, id_token
@@ -18,7 +18,8 @@ BUCKET_NAME = 'cloud-doc-bucket'
 
 # Flask App Setup
 app = Flask(__name__)
-CORS(app)
+# Enable CORS only for your GitHub Pages frontend domain
+CORS(app, origins=["https://ganeshr2766.github.io"])
 
 # SQLite DB Config
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///cloud_doc.db'
@@ -36,7 +37,6 @@ class SharedAccess(db.Model):
 
 # Google Credentials Handling
 def get_google_credentials():
-    # This function builds credentials from environment variables safely
     private_key = os.environ.get('GOOGLE_PRIVATE_KEY', '').replace('\\n', '\n')
     info = {
         "type": os.environ.get('GOOGLE_TYPE'),
@@ -52,7 +52,6 @@ def get_google_credentials():
         "universe_domain": os.environ.get('GOOGLE_UNIVERSE_DOMAIN')
     }
 
-    # Validate that required fields are present
     if not info["private_key"]:
         raise ValueError("Google private key is missing in environment variables")
 
@@ -60,7 +59,6 @@ def get_google_credentials():
     return credentials
 
 # Initialize Google Cloud Storage client and bucket
-# You can switch between using service account file or env vars
 try:
     if os.path.exists(SERVICE_ACCOUNT_FILE):
         credentials = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE)
@@ -82,7 +80,6 @@ def verify_google_token(token):
         return None
 
 def get_user_folder(email):
-    # Sanitizes the email for folder naming
     return f"{email.replace('@', '_at_').replace('.', '_dot_')}/"
 
 def auth_required(func):
@@ -115,13 +112,11 @@ def upload_file():
     counter = 1
     new_filename = filename
 
-    # Check if file exists in GCS
     while bucket.blob(f"{user_folder}{new_filename}").exists():
         new_filename = f"{base_name}({counter}){extension}"
         counter += 1
 
     blob = bucket.blob(f"{user_folder}{new_filename}")
-    # Important: rewind the file pointer before upload if needed
     file.seek(0)
     blob.upload_from_file(file)
     return jsonify({'message': f'File uploaded successfully as {new_filename}'})
@@ -181,7 +176,6 @@ def list_files():
         files = []
         user_folder = get_user_folder(request.user_email)
 
-        # Personal files
         blobs = bucket.list_blobs(prefix=user_folder)
         for blob in blobs:
             signed_url = blob.generate_signed_url(
@@ -196,7 +190,6 @@ def list_files():
                 'url': signed_url
             })
 
-        # Shared files
         shared_entries = SharedAccess.query.filter_by(shared_with_email=request.user_email).all()
         for entry in shared_entries:
             owner_folder = get_user_folder(entry.owner_email)
@@ -274,4 +267,3 @@ if __name__ == '__main__':
         db.create_all()
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port, debug=True)
-
