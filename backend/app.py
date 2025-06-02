@@ -2,54 +2,19 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from google.cloud import storage
 from google.oauth2 import service_account, id_token
-from google.auth.transport import requests
+from google.auth.transport import requests as google_requests
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.utils import secure_filename
 from mimetypes import guess_type
 from datetime import timedelta
 from functools import wraps
-from config import GCS_BUCKET_NAME, SECRET_KEY
 import os
 import json
 
 # Configuration
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-SERVICE_ACCOUNT_FILE = os.getenv('GOOGLE_APPLICATION_CREDENTIALS', os.path.join(BASE_DIR, "credentials", "centering-vine-460210-s6-e51668aed631.json"))
+SERVICE_ACCOUNT_FILE = "service_account.json"
 BUCKET_NAME = 'cloud-doc-bucket'
-
-
-credentials_json = os.getenv('GOOGLE_APPLICATION_CREDENTIALS_JSON')
-if credentials_json:
-    credentials_path = '/tmp/credentials.json'
-    with open(credentials_path, 'w') as f:
-        f.write(credentials_json)
-    os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = credentials_path
-def get_google_credentials():
-    private_key = os.environ['GOOGLE_PRIVATE_KEY'].replace('\\n', '\n')
-
-    info = {
-        "type": os.environ['GOOGLE_TYPE'],
-        "project_id": os.environ['GOOGLE_PROJECT_ID'],
-        "private_key_id": os.environ['GOOGLE_PRIVATE_KEY_ID'],
-        "private_key": private_key,
-        "client_email": os.environ['GOOGLE_CLIENT_EMAIL'],
-        "client_id": os.environ['GOOGLE_CLIENT_ID'],
-        "auth_uri": os.environ['GOOGLE_AUTH_URI'],
-        "token_uri": os.environ['GOOGLE_TOKEN_URI'],
-        "auth_provider_x509_cert_url": os.environ['GOOGLE_AUTH_PROVIDER_CERT_URL'],
-        "client_x509_cert_url": os.environ['GOOGLE_CLIENT_CERT_URL'],
-        "universe_domain": os.environ.get('GOOGLE_UNIVERSE_DOMAIN')
-    }
-
-    credentials = service_account.Credentials.from_service_account_info(info)
-    return credentials
-
-
-
-# Google Cloud Credentials
-credentials = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE)
-client = storage.Client(credentials=credentials)
-bucket = client.bucket(BUCKET_NAME)
 
 # Flask App Setup
 app = Flask(__name__)
@@ -69,15 +34,55 @@ class SharedAccess(db.Model):
     def __repr__(self):
         return f"<SharedAccess {self.owner_email} -> {self.shared_with_email}>"
 
+# Google Credentials Handling
+def get_google_credentials():
+    # This function builds credentials from environment variables safely
+    private_key = os.environ.get('GOOGLE_PRIVATE_KEY', '').replace('\\n', '\n')
+    info = {
+        "type": os.environ.get('GOOGLE_TYPE'),
+        "project_id": os.environ.get('GOOGLE_PROJECT_ID'),
+        "private_key_id": os.environ.get('GOOGLE_PRIVATE_KEY_ID'),
+        "private_key": private_key,
+        "client_email": os.environ.get('GOOGLE_CLIENT_EMAIL'),
+        "client_id": os.environ.get('GOOGLE_CLIENT_ID'),
+        "auth_uri": os.environ.get('GOOGLE_AUTH_URI'),
+        "token_uri": os.environ.get('GOOGLE_TOKEN_URI'),
+        "auth_provider_x509_cert_url": os.environ.get('GOOGLE_AUTH_PROVIDER_CERT_URL'),
+        "client_x509_cert_url": os.environ.get('GOOGLE_CLIENT_CERT_URL'),
+        "universe_domain": os.environ.get('GOOGLE_UNIVERSE_DOMAIN')
+    }
+
+    # Validate that required fields are present
+    if not info["private_key"]:
+        raise ValueError("Google private key is missing in environment variables")
+
+    credentials = service_account.Credentials.from_service_account_info(info)
+    return credentials
+
+# Initialize Google Cloud Storage client and bucket
+# You can switch between using service account file or env vars
+try:
+    if os.path.exists(SERVICE_ACCOUNT_FILE):
+        credentials = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE)
+    else:
+        credentials = get_google_credentials()
+except Exception as e:
+    print(f"Failed to load credentials: {e}")
+    raise
+
+client = storage.Client(credentials=credentials, project=credentials.project_id)
+bucket = client.bucket(BUCKET_NAME)
+
 # Helper Functions
 def verify_google_token(token):
     try:
-        idinfo = id_token.verify_oauth2_token(token, requests.Request())
-        return idinfo['email']
+        idinfo = id_token.verify_oauth2_token(token, google_requests.Request())
+        return idinfo.get('email')
     except Exception:
         return None
 
 def get_user_folder(email):
+    # Sanitizes the email for folder naming
     return f"{email.replace('@', '_at_').replace('.', '_dot_')}/"
 
 def auth_required(func):
@@ -110,11 +115,14 @@ def upload_file():
     counter = 1
     new_filename = filename
 
-    while bucket.blob(f"{user_folder}{new_filename}").exists(client):
+    # Check if file exists in GCS
+    while bucket.blob(f"{user_folder}{new_filename}").exists():
         new_filename = f"{base_name}({counter}){extension}"
         counter += 1
 
     blob = bucket.blob(f"{user_folder}{new_filename}")
+    # Important: rewind the file pointer before upload if needed
+    file.seek(0)
     blob.upload_from_file(file)
     return jsonify({'message': f'File uploaded successfully as {new_filename}'})
 
@@ -124,6 +132,9 @@ def upload_file():
 def preview_file(filename):
     user_folder = get_user_folder(request.user_email)
     blob = bucket.blob(f"{user_folder}{filename}")
+
+    if not blob.exists():
+        return jsonify({'error': 'File not found'}), 404
 
     try:
         mime_type, _ = guess_type(filename)
@@ -142,12 +153,13 @@ def preview_file(filename):
         return jsonify({'error': f'Failed to generate preview link: {str(e)}'}), 500
 
 # Download File
-@app.route('/download/<filename>', methods=['GET'])
+@app.route('/download/<path:filename>', methods=['GET'])
 @auth_required
 def download_file(filename):
     user_folder = get_user_folder(request.user_email)
     blob = bucket.blob(f"{user_folder}{filename}")
-    if not blob.exists(client):
+
+    if not blob.exists():
         return jsonify({'error': 'File not found'}), 404
 
     try:
@@ -207,12 +219,12 @@ def list_files():
         return jsonify({'error': f'Failed to list files: {str(e)}'}), 500
 
 # Delete File
-@app.route('/files/<filename>', methods=['DELETE'])
+@app.route('/files/<path:filename>', methods=['DELETE'])
 @auth_required
 def delete_file(filename):
     user_folder = get_user_folder(request.user_email)
     blob = bucket.blob(f"{user_folder}{filename}")
-    if not blob.exists(client):
+    if not blob.exists():
         return jsonify({'error': 'File not found'}), 404
 
     try:
