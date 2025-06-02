@@ -10,12 +10,34 @@ from datetime import timedelta
 from functools import wraps
 from config import GCS_BUCKET_NAME, SECRET_KEY
 import os
+import json
 
 # Configuration
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-SERVICE_ACCOUNT_FILE = os.path.join(BASE_DIR, "credentials", "centering-vine-460210-s6-e51668aed631.json")
-
+SERVICE_ACCOUNT_FILE = os.getenv('GOOGLE_APPLICATION_CREDENTIALS', os.path.join(BASE_DIR, "credentials", "centering-vine-460210-s6-e51668aed631.json"))
 BUCKET_NAME = 'cloud-doc-bucket'
+
+def get_google_credentials():
+    private_key = os.environ['GOOGLE_PRIVATE_KEY'].replace('\\n', '\n')
+
+    info = {
+        "type": os.environ['GOOGLE_TYPE'],
+        "project_id": os.environ['GOOGLE_PROJECT_ID'],
+        "private_key_id": os.environ['GOOGLE_PRIVATE_KEY_ID'],
+        "private_key": private_key,
+        "client_email": os.environ['GOOGLE_CLIENT_EMAIL'],
+        "client_id": os.environ['GOOGLE_CLIENT_ID'],
+        "auth_uri": os.environ['GOOGLE_AUTH_URI'],
+        "token_uri": os.environ['GOOGLE_TOKEN_URI'],
+        "auth_provider_x509_cert_url": os.environ['GOOGLE_AUTH_PROVIDER_CERT_URL'],
+        "client_x509_cert_url": os.environ['GOOGLE_CLIENT_CERT_URL'],
+        "universe_domain": os.environ.get('GOOGLE_UNIVERSE_DOMAIN')
+    }
+
+    credentials = service_account.Credentials.from_service_account_info(info)
+    return credentials
+
+get_google_credentials()
 
 # Google Cloud Credentials
 credentials = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE)
