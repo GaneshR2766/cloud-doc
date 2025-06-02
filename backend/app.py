@@ -17,6 +17,13 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 SERVICE_ACCOUNT_FILE = os.getenv('GOOGLE_APPLICATION_CREDENTIALS', os.path.join(BASE_DIR, "credentials", "centering-vine-460210-s6-e51668aed631.json"))
 BUCKET_NAME = 'cloud-doc-bucket'
 
+
+credentials_json = os.getenv('GOOGLE_APPLICATION_CREDENTIALS_JSON')
+if credentials_json:
+    credentials_path = '/tmp/credentials.json'
+    with open(credentials_path, 'w') as f:
+        f.write(credentials_json)
+    os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = credentials_path
 def get_google_credentials():
     private_key = os.environ['GOOGLE_PRIVATE_KEY'].replace('\\n', '\n')
 
@@ -37,7 +44,7 @@ def get_google_credentials():
     credentials = service_account.Credentials.from_service_account_info(info)
     return credentials
 
-get_google_credentials()
+
 
 # Google Cloud Credentials
 credentials = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE)
