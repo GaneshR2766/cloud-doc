@@ -12,6 +12,8 @@ import audioIcon from "../assets/audio.png";
 import zipIcon from "../assets/zip.png";
 import otherdocIcon from "../assets/otherdoc.png";
 
+const BASE_URL = 'https://cloud-doc-production.up.railway.app';
+
 function FileList({ refreshKey, token }) {
   const [files, setFiles] = useState([]);
   const [message, setMessage] = useState('');
@@ -20,7 +22,7 @@ function FileList({ refreshKey, token }) {
 
   const fetchFiles = () => {
     axios
-      .get('http://127.0.0.1:5000/files', {
+      .get(`${BASE_URL}/files`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((response) => {
@@ -47,7 +49,7 @@ function FileList({ refreshKey, token }) {
 
   const downloadFile = (filename) => {
     axios
-      .get(`http://127.0.0.1:5000/download/${encodeURIComponent(filename)}`, {
+      .get(`${BASE_URL}/download/${encodeURIComponent(filename)}`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((res) => {
@@ -59,7 +61,7 @@ function FileList({ refreshKey, token }) {
 
   const previewFile = (filename) => {
     axios
-      .get(`http://127.0.0.1:5000/preview/${encodeURIComponent(filename)}`, {
+      .get(`${BASE_URL}/preview/${encodeURIComponent(filename)}`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((res) => {
@@ -72,7 +74,7 @@ function FileList({ refreshKey, token }) {
   const deleteFile = (filename) => {
     if (!window.confirm(`Are you sure you want to delete "${filename}"?`)) return;
     axios
-      .delete(`http://127.0.0.1:5000/files/${encodeURIComponent(filename)}`, {
+      .delete(`${BASE_URL}/files/${encodeURIComponent(filename)}`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then(fetchFiles)
@@ -82,7 +84,7 @@ function FileList({ refreshKey, token }) {
   const clearAccesses = () => {
     if (!window.confirm('Are you sure you want to clear all shared accesses?')) return;
     axios
-      .delete('http://127.0.0.1:5000/clear-shared-accesses', {
+      .delete(`${BASE_URL}/clear-shared-accesses`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((res) => alert(res.data.message))
@@ -91,7 +93,7 @@ function FileList({ refreshKey, token }) {
 
   const shareFile = (filename) => {
     axios
-      .get(`http://127.0.0.1:5000/download/${encodeURIComponent(filename)}`, {
+      .get(`${BASE_URL}/download/${encodeURIComponent(filename)}`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((res) => {
@@ -112,7 +114,7 @@ function FileList({ refreshKey, token }) {
     }
     axios
       .post(
-        'http://127.0.0.1:5000/share-folder',
+        `${BASE_URL}/share-folder`,
         { shared_with_email: shareEmail.trim() },
         { headers: { Authorization: `Bearer ${token}` } }
       )
@@ -134,289 +136,221 @@ function FileList({ refreshKey, token }) {
 
       {/* Share Folder UI */}
       <div style={{ marginBottom: '1.5rem' }}>
-<style>
-  {`
-  @keyframes glowPulse {
-    0%, 100% {
-      box-shadow: 0 0 8px 2px rgba(123, 63, 242, 0.8);
-    }
-    50% {
-      box-shadow: 0 0 16px 6px rgba(123, 63, 242, 1);
-    }
-  }
-  `}
-</style>
+        <style>
+          {`
+          @keyframes glowPulse {
+            0%, 100% {
+              box-shadow: 0 0 8px 2px rgba(123, 63, 242, 0.8);
+            }
+            50% {
+              box-shadow: 0 0 16px 6px rgba(123, 63, 242, 1);
+            }
+          }
+          `}
+        </style>
 
-<input
-  type="email"
-  placeholder="Enter email to share folder"
-  value={shareEmail}
-  onChange={(e) => setShareEmail(e.target.value)}
-  style={{
-    padding: '0.59rem 0.75rem',
-    borderRadius: '6px',
-    border: '2px solid #7B3FF2',        // electric purple border
-    outline: 'none',
-    marginRight: '0.5rem',
-    transition: 'border-color 0.3s ease, box-shadow 0.3s ease',
-    boxShadow: '0 0 6px rgba(123, 63, 242, 0.4)',  // subtle purple glow
-    fontSize: '1rem',
-    width: '280px',
-  }}
-  onFocus={e => {
-    e.currentTarget.style.borderColor = '#5200d6'; // darker purple on focus
-    e.currentTarget.style.boxShadow = '0 0 10px 2px rgba(82, 0, 214, 0.7)'; // stronger purple glow on focus
-  }}
-  onBlur={e => {
-    e.currentTarget.style.borderColor = '#7B3FF2';
-    e.currentTarget.style.boxShadow = '0 0 6px rgba(123, 63, 242, 0.4)';
-  }}
-/>
+        <input
+          type="email"
+          placeholder="Enter email to share folder"
+          value={shareEmail}
+          onChange={(e) => setShareEmail(e.target.value)}
+          style={{
+            padding: '0.59rem 0.75rem',
+            borderRadius: '6px',
+            border: '2px solid #7B3FF2',
+            outline: 'none',
+            marginRight: '0.5rem',
+            transition: 'border-color 0.3s ease, box-shadow 0.3s ease',
+            boxShadow: '0 0 6px rgba(123, 63, 242, 0.4)',
+            fontSize: '1rem',
+            width: '280px',
+          }}
+          onFocus={e => {
+            e.currentTarget.style.borderColor = '#5200d6';
+            e.currentTarget.style.boxShadow = '0 0 10px 2px rgba(82, 0, 214, 0.7)';
+          }}
+          onBlur={e => {
+            e.currentTarget.style.borderColor = '#7B3FF2';
+            e.currentTarget.style.boxShadow = '0 0 6px rgba(123, 63, 242, 0.4)';
+          }}
+        />
 
-<button
-  onClick={shareFolder}
-  style={{
-    padding: '0.5rem 0.75rem',
-    marginLeft:'0.5rem',
-    background: 'linear-gradient(90deg, #7B3FF2 0%, #5200d6 100%)',  // purple gradient
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    alignItems: 'center',
-    gap: '0.5rem',
-    boxShadow: '0 0 8px 2px rgba(123, 63, 242, 0.8)', // bright purple glow
-    transition: 'background 0.3s ease, box-shadow 0.6s ease-in-out',
-    animation: 'glowPulse 2.5s ease-in-out infinite',
-  }}
-  onMouseEnter={e => {
-    e.currentTarget.style.background = 'linear-gradient(90deg, #5200d6 0%, #7B3FF2 100%)';
-    e.currentTarget.style.boxShadow = '0 0 12px 4px rgba(123, 63, 242, 1)';
-  }}
-  onMouseLeave={e => {
-    e.currentTarget.style.background = 'linear-gradient(90deg, #7B3FF2 0%, #5200d6 100%)';
-    e.currentTarget.style.boxShadow = '0 0 8px 2px rgba(123, 63, 242, 0.8)';
-  }}
->
-  Share Folder{' '}
-  <img
-    src={shareFolderIcon}
-    alt="Share Folder"
-    style={{ marginBottom: '-0.2rem', marginLeft: '0.3rem', width: '18px', height: '18px' }}
-  />
-</button>
-
-
-
-
+        <button
+          onClick={shareFolder}
+          style={{
+            padding: '0.5rem 0.75rem',
+            marginLeft:'0.5rem',
+            background: 'linear-gradient(90deg, #7B3FF2 0%, #5200d6 100%)',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            alignItems: 'center',
+            gap: '0.5rem',
+            boxShadow: '0 0 8px 2px rgba(123, 63, 242, 0.8)',
+            transition: 'background 0.3s ease, box-shadow 0.6s ease-in-out',
+            animation: 'glowPulse 2.5s ease-in-out infinite',
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.background = 'linear-gradient(90deg, #5200d6 0%, #7B3FF2 100%)';
+            e.currentTarget.style.boxShadow = '0 0 12px 4px rgba(123, 63, 242, 1)';
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.background = 'linear-gradient(90deg, #7B3FF2 0%, #5200d6 100%)';
+            e.currentTarget.style.boxShadow = '0 0 8px 2px rgba(123, 63, 242, 0.8)';
+          }}
+        >
+          Share Folder{' '}
+          <img
+            src={shareFolderIcon}
+            alt="Share Folder"
+            style={{ marginBottom: '-0.2rem', marginLeft: '0.3rem', width: '18px', height: '18px' }}
+          />
+        </button>
 
         {shareMsg && <p style={{ marginTop: '0.5rem', color: '#666' }}>{shareMsg}</p>}
       </div>
 
       {/* Clear All Shared Accesses Button */}
-<button
-  onClick={clearAccesses}
-  style={{
-    marginBottom: '1.5rem',
-    background: 'linear-gradient(90deg, #ff4d4d 0%, #cc0000 100%)', // red gradient
-    color: 'white',
-    padding: '0.5rem 1rem',
-    border: 'none',
-    borderRadius: '5px',
-    cursor: 'pointer',
-    alignItems: 'center',
-    gap: '0.5rem',
-    boxShadow: '0 0 8px 2px rgba(255, 77, 77, 0.8)', // red glow
-    transition: 'background 0.3s ease, box-shadow 0.6s ease-in-out',
-    animation: 'glowPulseRed 2.5s ease-in-out infinite',
-  }}
-  onMouseEnter={e => {
-    e.currentTarget.style.background = 'linear-gradient(90deg, #cc0000 0%, #ff4d4d 100%)';
-    e.currentTarget.style.boxShadow = '0 0 12px 4px rgba(255, 77, 77, 1)';
-  }}
-  onMouseLeave={e => {
-    e.currentTarget.style.background = 'linear-gradient(90deg, #ff4d4d 0%, #cc0000 100%)';
-    e.currentTarget.style.boxShadow = '0 0 8px 2px rgba(255, 77, 77, 0.8)';
-  }}
->
-  Clear All Shared Accesses
-  <img
-    src={cancelIcon}
-    alt="Cancel"
-    style={{ marginLeft: '0.5rem', marginTop: '0.1rem', width: '18px', height: '18px' }}
-  />
-</button>
-
-<style>
-  {`
-  @keyframes glowPulseRed {
-    0%, 100% {
-      box-shadow: 0 0 8px 2px rgba(255, 77, 77, 0.8);
-    }
-    50% {
-      box-shadow: 0 0 16px 6px rgba(255, 77, 77, 1);
-    }
-  }
-  `}
-</style>
-
-
-      {/* File list */}
-      {files.length > 0 ? (
-        <ul style={{ listStyle: 'none', padding: 0 }}>
-          {files.map((f) => (
-            <li
-  key={f.name}
-  style={{
-    marginBottom: '0.5rem',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '0.5rem',
-    border: '1px solid #eee',
-    borderRadius: '8px',
-    cursor: 'default',
-    transition: 'background-color 0.3s ease, box-shadow 0.3s ease',
-  }}
-  onMouseEnter={e => {
-    e.currentTarget.style.backgroundColor = '#f0f8ff'; // light blue bg on hover
-    e.currentTarget.style.boxShadow = '0 2px 8px rgba(24, 144, 255, 0.3)';
-    e.currentTarget.style.cursor = 'pointer'; // pointer cursor on hover over li
-  }}
-  onMouseLeave={e => {
-    e.currentTarget.style.backgroundColor = '';
-    e.currentTarget.style.boxShadow = '';
-    e.currentTarget.style.cursor = 'default';
-  }}
->
-  <span
-    style={{ cursor: 'pointer', flex: 1, display: 'flex', alignItems: 'center' }}
-    onClick={() => downloadFile(f.name)}
-    title="Click to download"
+      <button
+        onClick={clearAccesses}
+        style={{
+          marginBottom: '1.5rem',
+          background: 'linear-gradient(90deg, #ff4d4d 0%, #cc0000 100%)',
+          color: 'white',
+          padding: '0.5rem 1rem',
+          border: 'none',
+          borderRadius: '5px',
+          cursor: 'pointer',
+          alignItems: 'center',
+          gap: '0.5rem',
+          boxShadow: '0 0 10px 2px rgba(255, 77, 77, 0.8)',
+          transition: 'background 0.3s ease',
+        }}
         onMouseEnter={e => {
-      e.currentTarget.style.color = '#1890ff'; // blue text on hover
-      const img = e.currentTarget.querySelector('img');
-      if (img) {
-        img.style.filter = 'brightness(1.2)'; // brighten icon
-        img.style.transform = 'scale(1.1)'; // scale up icon slightly
-        img.style.transition = 'transform 0.3s ease, filter 0.3s ease';
-      }
-      e.currentTarget.style.textDecoration = 'underline'; // underline text
-    }}
-    onMouseLeave={e => {
-      e.currentTarget.style.color = '';
-      const img = e.currentTarget.querySelector('img');
-      if (img) {
-        img.style.filter = '';
-        img.style.transform = '';
-      }
-      e.currentTarget.style.textDecoration = 'none';
-    }}
-  >
-    <img
-      src={getIcon(f.name)}
-      alt="file icon"
-      style={{ width: '20px', height: '20px', verticalAlign: 'middle', marginRight: '8px' }}
-    />
-    <strong style={{color:'grey'}}>{f.name}</strong>
-  </span>
+          e.currentTarget.style.background = 'linear-gradient(90deg, #cc0000 0%, #ff4d4d 100%)';
+        }}
+        onMouseLeave={e => {
+          e.currentTarget.style.background = 'linear-gradient(90deg, #ff4d4d 0%, #cc0000 100%)';
+        }}
+      >
+        Clear All Shared Accesses{' '}
+        <img
+          src={recycleBinIcon}
+          alt="Clear Shared"
+          style={{ marginBottom: '-0.2rem', marginLeft: '0.3rem', width: '18px', height: '18px' }}
+        />
+      </button>
 
-  <span style={{ color: '#666', fontSize: '0.9rem', marginRight: '1rem' }}>
-    {f.size} KB • {f.modified}
-  </span>
-
-  <div style={{ display: 'flex', gap: '0.5rem' }}>
-    <button
-      onClick={() => previewFile(f.name)}
-      style={{
-        padding: '0.3rem 0.6rem',
-        background: '#1890ff',
-        color: '#fff',
-        border: 'none',
-        borderRadius: '4px',
-        cursor: 'pointer',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '0.4rem',
-        transition: 'background 0.3s ease, box-shadow 0.3s ease',
-        boxShadow: '0 0 6px rgba(24, 144, 255, 0.6)',
-      }}
-      onMouseEnter={e => {
-        e.currentTarget.style.background = '#1366cc';
-        e.currentTarget.style.boxShadow = '0 0 12px rgba(19, 102, 204, 0.9)';
-      }}
-      onMouseLeave={e => {
-        e.currentTarget.style.background = '#1890ff';
-        e.currentTarget.style.boxShadow = '0 0 6px rgba(24, 144, 255, 0.6)';
-      }}
-    >
-      <img src={eyeIcon} alt="Preview" style={{ width: '16px', height: '16px' }} />
-      Preview
-    </button>
-
-    <button
-      onClick={() => shareFile(f.name)}
-      style={{
-        padding: '0.3rem 0.6rem',
-        background: '#52c41a',
-        color: '#fff',
-        border: 'none',
-        borderRadius: '4px',
-        cursor: 'pointer',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '0.4rem',
-        transition: 'background 0.3s ease, box-shadow 0.3s ease',
-        boxShadow: '0 0 6px rgba(82, 196, 26, 0.6)',
-      }}
-      onMouseEnter={e => {
-        e.currentTarget.style.background = '#3e8e14';
-        e.currentTarget.style.boxShadow = '0 0 12px rgba(62, 142, 20, 0.9)';
-      }}
-      onMouseLeave={e => {
-        e.currentTarget.style.background = '#52c41a';
-        e.currentTarget.style.boxShadow = '0 0 6px rgba(82, 196, 26, 0.6)';
-      }}
-    >
-      <img src={shareIcon} alt="Share" style={{ width: '16px', height: '16px' }} />
-      Share
-    </button>
-
-    <button
-      onClick={() => deleteFile(f.name)}
-      style={{
-        padding: '0.3rem 0.6rem',
-        background: '#ff4d4f',
-        color: '#fff',
-        border: 'none',
-        borderRadius: '4px',
-        cursor: 'pointer',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '0.4rem',
-        transition: 'background 0.3s ease, box-shadow 0.3s ease',
-        boxShadow: '0 0 6px rgba(255, 77, 79, 0.6)',
-      }}
-      onMouseEnter={e => {
-        e.currentTarget.style.background = '#d9363e';
-        e.currentTarget.style.boxShadow = '0 0 12px rgba(217, 54, 62, 0.9)';
-      }}
-      onMouseLeave={e => {
-        e.currentTarget.style.background = '#ff4d4f';
-        e.currentTarget.style.boxShadow = '0 0 6px rgba(255, 77, 79, 0.6)';
-      }}
-    >
-      <img src={recycleBinIcon} alt="Delete" style={{ width: '16px', height: '16px' }} />
-      Delete
-    </button>
-  </div>
-</li>
-
+      {/* File List Table */}
+      <table
+        style={{
+          width: '100%',
+          borderCollapse: 'collapse',
+          fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+        }}
+      >
+        <thead style={{ backgroundColor: '#7B3FF2', color: 'white' }}>
+          <tr>
+            <th style={{ padding: '10px' }}>File Name</th>
+            <th>Preview</th>
+            <th>Download</th>
+            <th>Delete</th>
+            <th>Share Link</th>
+          </tr>
+        </thead>
+        <tbody>
+          {files.length === 0 && (
+            <tr>
+              <td colSpan={5} style={{ textAlign: 'center', padding: '1rem', color: '#555' }}>
+                {message || 'Loading...'}
+              </td>
+            </tr>
+          )}
+          {files.map((file) => (
+            <tr key={file} style={{ borderBottom: '1px solid #ddd' }}>
+              <td
+                style={{
+                  padding: '8px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.6rem',
+                }}
+                onClick={() => downloadFile(file)}
+                title={`Download ${file}`}
+              >
+                <img
+                  src={getIcon(file)}
+                  alt="File Icon"
+                  style={{ width: '24px', height: '24px' }}
+                />
+                {file}
+              </td>
+              <td style={{ textAlign: 'center' }}>
+                <button
+                  onClick={() => previewFile(file)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                  }}
+                  title="Preview"
+                >
+                  <img src={eyeIcon} alt="Preview" style={{ width: '20px', height: '20px' }} />
+                </button>
+              </td>
+              <td style={{ textAlign: 'center' }}>
+                <button
+                  onClick={() => downloadFile(file)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                  }}
+                  title="Download"
+                >
+                  <img src={shareIcon} alt="Download" style={{ width: '20px', height: '20px' }} />
+                </button>
+              </td>
+              <td style={{ textAlign: 'center' }}>
+                <button
+                  onClick={() => deleteFile(file)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                  }}
+                  title="Delete"
+                >
+                  <img
+                    src={recycleBinIcon}
+                    alt="Delete"
+                    style={{ width: '20px', height: '20px' }}
+                  />
+                </button>
+              </td>
+              <td style={{ textAlign: 'center' }}>
+                <button
+                  onClick={() => shareFile(file)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                  }}
+                  title="Copy Share Link"
+                >
+                  <img
+                    src={shareIcon}
+                    alt="Share"
+                    style={{ width: '20px', height: '20px' }}
+                  />
+                </button>
+              </td>
+            </tr>
           ))}
-        </ul>
-      ) : (
-        <p style={{ color: '#999' }}>{message || 'Loading files...'}</p>
-      )}
+        </tbody>
+      </table>
     </div>
   );
 }
